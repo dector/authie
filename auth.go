@@ -33,7 +33,6 @@ type Session struct {
 	Token          string
 	ActiveUntil    time.Time
 	RenewableUntil time.Time
-	IPAddress      string
 	Revoked        bool
 	User           *User
 }
@@ -44,7 +43,6 @@ type CreateSessionParams struct {
 	Token          string
 	ActiveUntil    time.Time
 	RenewableUntil time.Time
-	IPAddress      string
 }
 
 type GetSessionByTokenParams struct {
@@ -91,14 +89,11 @@ func (ac *AuthController) CreateSession(ctx context.Context, userID int, r *http
 	activeUntil := now.Add(ac.config.ValidityTime)
 	renewableUntil := now.Add(ac.config.RenewabilityTime)
 
-	ipAddress := getIPAddress(r)
-
 	params := CreateSessionParams{
 		UserID:         userID,
 		Token:          token,
 		ActiveUntil:    activeUntil,
 		RenewableUntil: renewableUntil,
-		IPAddress:      ipAddress,
 	}
 
 	return ac.store.CreateSession(ctx, params)
