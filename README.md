@@ -107,7 +107,6 @@ type Session struct {
     Token          string
     ActiveUntil    time.Time
     RenewableUntil time.Time
-    IPAddress      string
     Revoked        bool
     User           *User // Associated user data
 }
@@ -134,7 +133,6 @@ type CreateSessionParams struct {
     Token          string
     ActiveUntil    time.Time
     RenewableUntil time.Time
-    IPAddress      string
 }
 
 // ... other param structs (GetSessionByTokenParams, etc.)
@@ -207,7 +205,6 @@ func (s *MySessionStore) CreateSession(ctx context.Context, params authie.Create
         Token:          dbSession.Token,
         ActiveUntil:    dbSession.ActiveUntil,
         RenewableUntil: dbSession.RenewableUntil,
-        IPAddress:      dbSession.IPAddress,
         Revoked:        dbSession.RevokedAt != nil,
     }, nil
 }
@@ -226,7 +223,6 @@ func (s *MySessionStore) GetSessionByToken(ctx context.Context, params authie.Ge
         Token:          dbSession.Token,
         ActiveUntil:    dbSession.ActiveUntil,
         RenewableUntil: dbSession.RenewableUntil,
-        IPAddress:      dbSession.IPAddress,
         Revoked:        dbSession.RevokedAt != nil,
         User: &authie.User{
             ID:    dbSession.User.ID,
@@ -330,7 +326,6 @@ CREATE TABLE user_sessions (
     token VARCHAR(40) NOT NULL UNIQUE,
     active_until TIMESTAMP NOT NULL,
     renewable_until TIMESTAMP NOT NULL,
-    ip_address VARCHAR(45) NOT NULL,
     revoked_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -344,7 +339,6 @@ CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
 
 - **Tokens**: 40-character hex tokens (160 bits of entropy)
 - **Cookies**: HTTP-only, Secure, configurable SameSite
-- **IP Tracking**: Sessions track IP addresses for security monitoring
 - **Session Renewal**: Automatic renewal prevents session fixation
 - **Revocation**: Explicit session revocation support
 
@@ -386,7 +380,6 @@ func (s *SimpleSessionStore) CreateSession(ctx context.Context, params authie.Cr
         Token:          params.Token,
         ActiveUntil:    params.ActiveUntil,
         RenewableUntil: params.RenewableUntil,
-        IPAddress:      params.IPAddress,
         User:           &authie.User{ID: user.ID, Login: user.Login},
     }
     mockSessions[params.Token] = session
