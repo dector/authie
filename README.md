@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/logo.webp" width="300"></p>
 
-# auth - Reusable Authentication Package
+# Authie - Reusable Authentication Package
 
 ## Table of Contents
 
@@ -50,16 +50,16 @@ import "github.com/dector/authie"
 
 func main() {
     // 1. Create configuration
-    config := auth.NewConfig("my_session")
+    config := authie.NewConfig("my_session")
 
     // 2. Implement the SessionStore interface for your database
     store := NewMySessionStore(db) // Your database-specific implementation
 
     // 3. Create AuthController
-    authController := auth.NewAuthController(config, store)
+    authController := authie.NewAuthController(config, store)
 
     // 4. Use in HTTP middleware
-    actionHandler := auth.NewDefaultAuthActionHandler("/login")
+    actionHandler := authie.NewDefaultAuthActionHandler("/login")
 
     // For frameworks like gorilla/mux, chi, etc:
     // r.Use(authController.Middleware(actionHandler))
@@ -116,12 +116,12 @@ type Session struct {
 ### Core Interfaces
 
 #### SessionStore Interface
-You must implement this interface to provide the bridge between the `auth` package and your database.
+You must implement this interface to provide the bridge between the `authie` package and your database.
 
 ```go
 type SessionStore interface {
-    CreateSession(ctx context.Context, params CreateSessionParams) (*auth.Session, error)
-    GetSessionByToken(ctx context.Context, params GetSessionByTokenParams) (*auth.Session, error)
+    CreateSession(ctx context.Context, params CreateSessionParams) (*authie.Session, error)
+    GetSessionByToken(ctx context.Context, params GetSessionByTokenParams) (*authie.Session, error)
     UpdateSession(ctx context.Context, params UpdateSessionParams) error
     RevokeSession(ctx context.Context, params RevokeSessionParams) error
 }
@@ -156,10 +156,10 @@ The main controller for session management.
 
 ```go
 // Create session for a user
-CreateSession(ctx context.Context, userID int, r *http.Request) (*auth.Session, error)
+CreateSession(ctx context.Context, userID int, r *http.Request) (*authie.Session, error)
 
 // Verify and optionally renew a session from a token
-VerifySession(ctx context.Context, token string) (*auth.Session, bool, error)
+VerifySession(ctx context.Context, token string) (*authie.Session, bool, error)
 
 // Close/revoke a session
 CloseSession(ctx context.Context, sessionID int) error
@@ -171,7 +171,7 @@ SetSessionCookie(w http.ResponseWriter, token string)
 ClearSessionCookie(w http.ResponseWriter)
 
 // Get the session from an HTTP request
-GetSessionFromRequest(r *http.Request) (*auth.Session, bool)
+GetSessionFromRequest(r *http.Request) (*authie.Session, bool)
 
 // HTTP middleware to protect routes
 Middleware(actionHandler AuthActionHandler) func(http.Handler) http.Handler
@@ -181,7 +181,7 @@ Middleware(actionHandler AuthActionHandler) func(http.Handler) http.Handler
 
 ### 1. Implement SessionStore
 
-The only implementation required is the `SessionStore` interface. Create an adapter for your database that maps your data models to the `auth.Session` and `auth.User` structs.
+The only implementation required is the `SessionStore` interface. Create an adapter for your database that maps your data models to the `authie.Session` and `authie.User` structs.
 
 ```go
 import (
@@ -193,15 +193,15 @@ type MySessionStore struct {
     db *sql.DB // or your ORM client
 }
 
-func (s *MySessionStore) CreateSession(ctx context.Context, params auth.CreateSessionParams) (*auth.Session, error) {
+func (s *MySessionStore) CreateSession(ctx context.Context, params authie.CreateSessionParams) (*authie.Session, error) {
     // 1. Insert session into your database
     dbSession, err := models.CreateDBSession(ctx, s.db, params)
     if err != nil {
         return nil, err
     }
 
-    // 2. Map your DB model to auth.Session and return
-    return &auth.Session{
+    // 2. Map your DB model to authie.Session and return
+    return &authie.Session{
         ID:             dbSession.ID,
         UserID:         dbSession.UserID,
         Token:          dbSession.Token,
@@ -212,15 +212,15 @@ func (s *MySessionStore) CreateSession(ctx context.Context, params auth.CreateSe
     }, nil
 }
 
-func (s *MySessionStore) GetSessionByToken(ctx context.Context, params auth.GetSessionByTokenParams) (*auth.Session, error) {
+func (s *MySessionStore) GetSessionByToken(ctx context.Context, params authie.GetSessionByTokenParams) (*authie.Session, error) {
     // 1. Query session and user data from your database
     dbSession, err := models.GetDBSessionWithUser(ctx, s.db, params.Token)
     if err != nil {
         return nil, err
     }
 
-    // 2. Map your DB models to auth.Session and auth.User
-    return &auth.Session{
+    // 2. Map your DB models to authie.Session and authie.User
+    return &authie.Session{
         ID:             dbSession.ID,
         UserID:         dbSession.UserID,
         Token:          dbSession.Token,
@@ -228,18 +228,18 @@ func (s *MySessionStore) GetSessionByToken(ctx context.Context, params auth.GetS
         RenewableUntil: dbSession.RenewableUntil,
         IPAddress:      dbSession.IPAddress,
         Revoked:        dbSession.RevokedAt != nil,
-        User: &auth.User{
+        User: &authie.User{
             ID:    dbSession.User.ID,
             Login: dbSession.User.Login,
         },
     }, nil
 }
 
-func (s *MySessionStore) UpdateSession(ctx context.Context, params auth.UpdateSessionParams) error {
+func (s *MySessionStore) UpdateSession(ctx context.Context, params authie.UpdateSessionParams) error {
     // Update session token and timestamps in your database
 }
 
-func (s *MySessionStore) RevokeSession(ctx context.Context, params auth.RevokeSessionParams) error {
+func (s *MySessionStore) RevokeSession(ctx context.Context, params authie.RevokeSessionParams) error {
     // Mark session as revoked in your database
 }
 ```
@@ -267,7 +267,7 @@ func (h *APIAuthActionHandler) HandleAuthError(w http.ResponseWriter, r *http.Re
 ### Login Handler
 
 ```go
-func LoginHandler(authController *auth.AuthController) http.HandlerFunc {
+func LoginHandler(authController *authie.AuthController) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         // ... validate credentials for 'user' ...
 
@@ -289,7 +289,7 @@ func LoginHandler(authController *auth.AuthController) http.HandlerFunc {
 ### Logout Handler
 
 ```go
-func LogoutHandler(authController *auth.AuthController) http.HandlerFunc {
+func LogoutHandler(authController *authie.AuthController) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         // Optional: revoke session in database
         if session, ok := authController.GetSessionFromRequest(r); ok {
@@ -309,7 +309,7 @@ func LogoutHandler(authController *auth.AuthController) http.HandlerFunc {
 ```go
 func SomeHandler(w http.ResponseWriter, r *http.Request) {
     // User is available in context after middleware
-    user, ok := r.Context().Value("user").(*auth.User)
+    user, ok := r.Context().Value("user").(*authie.User)
     if !ok {
         http.Error(w, "User not found", http.StatusInternalServerError)
         return
@@ -369,31 +369,31 @@ import (
 var mockUsers = map[int]struct{ ID int; Login string }{
     1: {ID: 1, Login: "testuser"},
 }
-var mockSessions = make(map[string]*auth.Session)
+var mockSessions = make(map[string]*authie.Session)
 
 // Minimal SessionStore implementation
 type SimpleSessionStore struct{}
 
-func (s *SimpleSessionStore) CreateSession(ctx context.Context, params auth.CreateSessionParams) (*auth.Session, error) {
+func (s *SimpleSessionStore) CreateSession(ctx context.Context, params authie.CreateSessionParams) (*authie.Session, error) {
     user, ok := mockUsers[params.UserID]
     if !ok {
         return nil, fmt.Errorf("user not found")
     }
 
-    session := &auth.Session{
+    session := &authie.Session{
         ID:             len(mockSessions) + 1,
         UserID:         params.UserID,
         Token:          params.Token,
         ActiveUntil:    params.ActiveUntil,
         RenewableUntil: params.RenewableUntil,
         IPAddress:      params.IPAddress,
-        User:           &auth.User{ID: user.ID, Login: user.Login},
+        User:           &authie.User{ID: user.ID, Login: user.Login},
     }
     mockSessions[params.Token] = session
     return session, nil
 }
 
-func (s *SimpleSessionStore) GetSessionByToken(ctx context.Context, params auth.GetSessionByTokenParams) (*auth.Session, error) {
+func (s *SimpleSessionStore) GetSessionByToken(ctx context.Context, params authie.GetSessionByTokenParams) (*authie.Session, error) {
     session, exists := mockSessions[params.Token]
     if !exists {
         return nil, fmt.Errorf("session not found")
@@ -401,22 +401,22 @@ func (s *SimpleSessionStore) GetSessionByToken(ctx context.Context, params auth.
     return session, nil
 }
 
-func (s *SimpleSessionStore) UpdateSession(ctx context.Context, params auth.UpdateSessionParams) error {
+func (s *SimpleSessionStore) UpdateSession(ctx context.Context, params authie.UpdateSessionParams) error {
     // Find and update session
     return nil // Simplified for example
 }
 
-func (s *SimpleSessionStore) RevokeSession(ctx context.Context, params auth.RevokeSessionParams) error {
+func (s *SimpleSessionStore) RevokeSession(ctx context.Context, params authie.RevokeSessionParams) error {
     // Find and mark session as revoked
     return nil // Simplified for example
 }
 
 func main() {
     // Setup
-    config := auth.NewConfig("simple_session")
+    config := authie.NewConfig("simple_session")
     store := &SimpleSessionStore{}
-    authController := auth.NewAuthController(config, store)
-    authActionHandler := auth.NewDefaultAuthActionHandler("/login")
+    authController := authie.NewAuthController(config, store)
+    authActionHandler := authie.NewDefaultAuthActionHandler("/login")
 
     mux := http.NewServeMux()
 
@@ -437,7 +437,7 @@ func main() {
 
     // Protected dashboard
     dashboardHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        user := r.Context().Value("user").(*auth.User)
+        user := r.Context().Value("user").(*authie.User)
         fmt.Fprintf(w, "Welcome, %s!", user.Login)
     })
     mux.Handle("/dashboard", authController.Middleware(authActionHandler)(dashboardHandler))
