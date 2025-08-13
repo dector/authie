@@ -39,7 +39,7 @@ func (ac *AuthController) Middleware(actionHandler AuthActionHandler) func(http.
 			ctx := r.Context()
 
 			cookie, err := r.Cookie(ac.config.CookieName)
-			if err != nil || len(cookie.Value) != SessionTokenLength {
+			if err != nil || len(cookie.Value) != ac.config.SessionTokenLength {
 				actionHandler.HandleUnauthenticated(w, r)
 				return
 			}

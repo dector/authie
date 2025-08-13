@@ -77,14 +77,16 @@ Configuration for session management:
 
 ```go
 type Config struct {
-    CookieName       string        // Required: name of session cookie
-    ValidityTime     time.Duration // How long session is active
-    RenewabilityTime time.Duration // How long session can be renewed
-    SameSite         http.SameSite // Cookie SameSite setting
+    CookieName         string        // Required: name of session cookie
+    SessionTokenLength int           // Length of generated session tokens
+    ValidityTime       time.Duration // How long session is active
+    RenewabilityTime   time.Duration // How long session can be renewed
+    SameSite           http.SameSite // Cookie SameSite setting
 }
 ```
 
 **Default Values:**
+- `SessionTokenLength`: 40 characters
 - `ValidityTime`: 3 days
 - `RenewabilityTime`: 7 days
 - `SameSite`: `http.SameSiteLaxMode`
@@ -337,7 +339,7 @@ CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
 
 ## Security Considerations
 
-- **Tokens**: 40-character hex tokens (160 bits of entropy)
+- **Tokens**: Configurable length hex tokens (default 40 characters = 160 bits of entropy)
 - **Cookies**: HTTP-only, Secure, configurable SameSite
 - **Session Renewal**: Automatic renewal prevents session fixation
 - **Revocation**: Explicit session revocation support

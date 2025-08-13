@@ -4,21 +4,27 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/dector/authie/internal"
 )
 
+const DefaultSessionTokenLength = 40
+
 type Config struct {
-	CookieName       string
-	ValidityTime     time.Duration
-	RenewabilityTime time.Duration
-	SameSite         http.SameSite
+	CookieName         string
+	SessionTokenLength int
+	ValidityTime       time.Duration
+	RenewabilityTime   time.Duration
+	SameSite           http.SameSite
 }
 
 func NewConfig(cookieName string) Config {
 	return Config{
-		CookieName:       cookieName,
-		ValidityTime:     3 * 24 * time.Hour, // 3 days
-		RenewabilityTime: 7 * 24 * time.Hour, // 7 days
-		SameSite:         http.SameSiteLaxMode,
+		CookieName:         cookieName,
+		SessionTokenLength: DefaultSessionTokenLength,
+		ValidityTime:       3 * 24 * time.Hour, // 3 days
+		RenewabilityTime:   7 * 24 * time.Hour, // 7 days
+		SameSite:           http.SameSiteLaxMode,
 	}
 }
 
@@ -80,7 +86,7 @@ func NewAuthController(config Config, store SessionStore) *AuthController {
 }
 
 func (ac *AuthController) CreateSession(ctx context.Context, userID int, r *http.Request) (*Session, error) {
-	token, err := GenerateSecureToken()
+	token, err := internal.GenerateSecureToken(ac.config.SessionTokenLength)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +123,7 @@ func (ac *AuthController) VerifySession(ctx context.Context, token string) (*Ses
 			return nil, false, nil
 		}
 
-		newToken, err := GenerateSecureToken()
+		newToken, err := internal.GenerateSecureToken(ac.config.SessionTokenLength)
 		if err != nil {
 			return nil, false, err
 		}
@@ -181,7 +187,7 @@ func (ac *AuthController) ClearSessionCookie(w http.ResponseWriter) {
 
 func (ac *AuthController) GetSessionFromRequest(r *http.Request) (*Session, bool) {
 	cookie, err := r.Cookie(ac.config.CookieName)
-	if err != nil || len(cookie.Value) != SessionTokenLength {
+	if err != nil || len(cookie.Value) != ac.config.SessionTokenLength {
 		return nil, false
 	}
 
