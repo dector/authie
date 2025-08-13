@@ -6,8 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-08-13
+
 ### Added
 - Session token length configurable through `Config.SessionTokenLength` field
+
+### Fixed
+- Fixed panic that occurs when there is no matching token for stored sessions
 
 ## [0.2.0] - 2025-08-13
 
