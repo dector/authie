@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dector/authie/internal"
+	"github.com/dector/authie/src/utils"
 )
 
 const DefaultSessionTokenLength = 40
@@ -86,7 +86,7 @@ func NewAuthController(config Config, store SessionStore) *AuthController {
 }
 
 func (ac *AuthController) CreateSession(ctx context.Context, userID int, r *http.Request) (*Session, error) {
-	token, err := internal.GenerateSecureToken(ac.config.SessionTokenLength)
+	token, err := utils.GenerateSecureToken(ac.config.SessionTokenLength)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (ac *AuthController) VerifySession(ctx context.Context, token string) (*Ses
 			return nil, false, nil
 		}
 
-		newToken, err := internal.GenerateSecureToken(ac.config.SessionTokenLength)
+		newToken, err := utils.GenerateSecureToken(ac.config.SessionTokenLength)
 		if err != nil {
 			return nil, false, err
 		}
