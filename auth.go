@@ -112,6 +112,10 @@ func (ac *AuthController) VerifySession(ctx context.Context, token string) (*Ses
 		return nil, false, err
 	}
 
+	if session == nil {
+		return nil, false, nil
+	}
+
 	if session.Revoked {
 		return nil, false, nil
 	}
