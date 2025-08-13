@@ -3,9 +3,18 @@ package internal
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 )
 
 func GenerateSecureToken(length int) (string, error) {
+	// Handle edge cases
+	if length < 0 {
+		return "", fmt.Errorf("invalid token length: %d", length)
+	}
+	if length == 0 {
+		return "", nil
+	}
+
 	// For odd lengths, generate one extra byte and trim the result
 	byteLength := length / 2
 	if length%2 != 0 {
